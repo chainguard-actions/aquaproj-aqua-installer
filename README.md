@@ -1,14 +1,17 @@
-# aquaproj/aqua-installer
+# aqua-installer
 
-Install aqua https://aquaproj.github.io/ and install tools with aqua
+[![GitHub last commit](https://img.shields.io/github/last-commit/aquaproj/aqua-installer.svg)](https://github.com/aquaproj/aqua-installer)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/aquaproj/aqua-installer/main/LICENSE)
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/aquaproj/aqua-installer](https://github.com/aquaproj/aqua-installer).
+Install [aqua](https://aquaproj.github.io/) quickly.
 
-## Versions
+## Document
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v4.0.2 | [`v4.0.2`](https://github.com/chainguard-actions/aqua-installer/tree/v4.0.2) | — |
+Please see [document](https://aquaproj.github.io/docs/products/aqua-installer).
+
+## License
+
+[MIT](LICENSE)
 
 ## Privacy
 
