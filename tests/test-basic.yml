@@ -1,0 +1,25 @@
+name: Test basic aqua installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.45.0
+          enable_aqua_install: "false"
+          github_token: ${{ github.token }}
+      - name: Assert aqua is installed and on PATH
+        run: |
+          echo "Checking aqua binary..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua binary not found on PATH"
+            exit 1
+          fi
+          echo "aqua found at: $(command -v aqua)"
+          INSTALLED_VERSION=$(aqua version 2>&1 | head -1 || true)
+          echo "aqua version output: $INSTALLED_VERSION"
+          echo "PASS"
