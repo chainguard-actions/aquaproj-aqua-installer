@@ -11,6 +11,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/aqua-installer/tree/v4.0.0) | — |
 | v4.0.1 | [`v4.0.1`](https://github.com/chainguard-actions/aqua-installer/tree/v4.0.1) | — |
 | v4.0.2 | [`v4.0.2`](https://github.com/chainguard-actions/aqua-installer/tree/v4.0.2) | — |
+| v4.0.3 | [`v4.0.3`](https://github.com/chainguard-actions/aqua-installer/tree/v4.0.3) | — |
 
 ## Privacy
 
