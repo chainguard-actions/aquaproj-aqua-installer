@@ -1,0 +1,24 @@
+name: Test aqua installation with policy_allow
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.45.0
+          policy_allow: "true"
+          enable_aqua_install: "false"
+          github_token: ${{ github.token }}
+      - name: Assert aqua is installed and in PATH
+        run: |
+          echo "Checking aqua is available..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua not found in PATH"
+            exit 1
+          fi
+          echo "aqua version: $(aqua version)"
+          echo "PASS: aqua is installed with policy_allow=true"

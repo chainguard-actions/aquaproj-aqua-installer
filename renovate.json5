@@ -1,0 +1,33 @@
+{
+  extends: [
+    'github>suzuki-shunsuke/renovate-config#3.3.1',
+    'github>suzuki-shunsuke/renovate-config:nolimit#3.3.1',
+    'github>aquaproj/aqua-renovate-config#2.9.0',
+    'github>aquaproj/aqua-renovate-config:installer-script#2.9.0(README\\.md)',
+  ],
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/README.md/',
+      ],
+      depNameTemplate: 'aquaproj/aqua-installer',
+      datasourceTemplate: 'github-releases',
+      matchStrings: [
+        'aqua-installer@(?<currentValue>.*)',
+      ],
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/README.md/',
+      ],
+      depNameTemplate: 'aquaproj/aqua',
+      datasourceTemplate: 'github-releases',
+      matchStrings: [
+        'aqua_version: (?<currentValue>.*?)\\n',
+        'bash -s -- -v (?<currentValue>.*) -i',
+      ],
+    },
+  ],
+}
