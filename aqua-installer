@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# aqua-installer - shell script to install aqua
+# https://github.com/aquaproj/aqua-installer
+
+set -eu
+set -o pipefail || :
+
+usage_exit() {
+	echo "Usage: $0 [-v version]" 1>&2
+	exit 1
+}
+
+uname_os() {
+	local os
+	os=$(uname -s | tr '[:upper:]' '[:lower:]')
+	case "$os" in
+		cygwin_nt*) os="windows" ;;
+		mingw*) os="windows" ;;
+		msys_nt*) os="windows" ;;
+	esac
+	echo "$os"
+}
+
+uname_arch() {
+	local arch
+	arch=$(uname -m)
+	case $arch in
+		x86_64) arch="amd64" ;;
+		aarch64) arch="arm64" ;;
+	esac
+	echo "${arch}"
+}
+
+OS="$(uname_os)"
+ARCH="$(uname_arch)"
+
+install_path=${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin/aqua
+if [ "$OS" = windows ]; then
+	install_path=${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin/aqua.exe
+fi
+
+while getopts v: OPT
+do
+	case $OPT in
+		v) AQUA_VERSION=$OPTARG
+			;;
+		\?) usage_exit
+			;;
+	esac
+done
+
+shift $((OPTIND - 1))
+
+bootstrap_version=v2.51.2
+checksums="ccca5f1c6473aa1fe67f84b244656290ac72e26998ef3479e00843b6b3e52650  aqua_darwin_amd64.tar.gz
+4ff9a263f6125369b391d37ad6593a8b987aae672c311f61859c4db986732357  aqua_darwin_arm64.tar.gz
+17db2da427bde293b1942e3220675ef796a67f1207daf89e6e80fea8d2bb8c22  aqua_linux_amd64.tar.gz
+b3f0d573e762ce9d104c671b8224506c4c4a32eedd1e6d7ae1e1e39983cdb6a8  aqua_linux_arm64.tar.gz
+bcac8677b632009ba9b561d38dddb0e07c55c5ac4690e0deb1a24b9e0cf282c8  aqua_windows_amd64.zip
+3d76eaaf9211aeb6186f1829ff21930a798a45163fac58c4ab5aa753a3220616  aqua_windows_arm64.zip"
+
+filename=aqua_${OS}_${ARCH}.tar.gz
+if [ "$OS" = windows ]; then
+	filename=aqua_${OS}_${ARCH}.zip
+fi
+URL=https://github.com/aquaproj/aqua/releases/download/$bootstrap_version/$filename
+
+tempdir=$(mktemp -d)
+echo "[INFO] Installing aqua $bootstrap_version for bootstrapping..." >&2
+echo "[INFO] Downloading $URL ..." >&2
+if command -v curl > /dev/null 2>&1; then
+	curl --fail -L "$URL" -o "$tempdir/$filename"
+elif command -v wget > /dev/null 2>&1; then
+	wget -P "$tempdir" "$URL"
+else
+	echo "[ERROR] Neither curl nor wget is found. Please install either curl or wget to download aqua" >&2
+	exit 1
+fi
+
+cd "$tempdir"
+
+echo "[INFO] Verifying checksum of aqua $bootstrap_version ..." >&2
+if command -v sha256sum > /dev/null 2>&1; then
+	echo "$checksums" | grep "$filename" | sha256sum -c -
+elif command -v shasum > /dev/null 2>&1; then
+	echo "$checksums" | grep "$filename" | shasum -a 256 -c
+else
+	echo "[WARN] Skipped checksum verification of aqua $bootstrap_version because both sha256sum and shasum commands aren't found" >&2
+fi
+
+if [ "$OS" = windows ]; then
+	unzip "$filename" > /dev/null
+else
+	tar xvzf "$filename" > /dev/null
+fi
+chmod a+x aqua
+if [ -n "${AQUA_VERSION:-}" ]; then
+	echo "[INFO] $tempdir/aqua update-aqua $AQUA_VERSION" >&2
+	./aqua update-aqua "$AQUA_VERSION"
+else
+	echo "[INFO] $tempdir/aqua update-aqua" >&2
+	./aqua update-aqua
+fi
+
+echo ""
+echo "==============================================================="
+echo "[INFO] aqua is installed into $install_path" >&2
+echo '[INFO] Please add the path to the environment variable "PATH"' >&2
+# shellcheck disable=SC2016
+install_dir='${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin'
+if [ "$OS" = windows ]; then
+	# shellcheck disable=SC2016
+	install_dir='${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin'
+fi
+echo "[INFO] export PATH=$install_dir:\$PATH" >&2
+echo "==============================================================="
+echo ""
+
+"$install_path" -v
+
+rm -R "$tempdir"

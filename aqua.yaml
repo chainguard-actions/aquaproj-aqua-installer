@@ -1,0 +1,14 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aquaproj/aqua/v2.51.2/json-schema/aqua-yaml.json
+# aqua - Declarative CLI Version Manager
+# https://aquaproj.github.io/
+registries:
+- type: standard
+  ref: v4.44.3 # renovate: depName=aquaproj/aqua-registry
+packages:
+- name: rhysd/actionlint@v1.7.7
+- name: reviewdog/reviewdog@v0.20.3
+- name: suzuki-shunsuke/cmdx@v2.0.1
+- name: golangci/golangci-lint@v2.1.6
+- name: int128/ghcp@v1.13.5
+- name: suzuki-shunsuke/ghalint@v1.4.0

@@ -1,0 +1,26 @@
+name: Test basic aqua installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.51.2
+          enable_aqua_install: "false"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Assert aqua is on PATH
+        run: |
+          echo "Checking aqua is available..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found on PATH"
+            exit 1
+          fi
+          echo "aqua version: $(aqua -v 2>&1 || true)"
+          echo "PASS: aqua is available on PATH"
