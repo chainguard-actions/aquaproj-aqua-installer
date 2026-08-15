@@ -13,6 +13,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v4.0.2 | [`v4.0.2`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.2) | — |
 | v4.0.3 | [`v4.0.3`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.3) | — |
 | v4.0.4 | [`v4.0.4`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.4) | — |
+| v4.0.5 | [`v4.0.5`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.5) | [`96a9bc2`](https://github.com/aquaproj/aqua-installer/commit/96a9bc20066c5bf5e275b41019cfc165b25f4e2e) |
 
 ## Privacy
 
