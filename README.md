@@ -1,18 +1,12 @@
-# aquaproj/aqua-installer
+# aqua-installer
 
-Install aqua https://aquaproj.github.io/ and install tools with aqua
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/aquaproj/aqua-installer)
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/aquaproj/aqua-installer](https://github.com/aquaproj/aqua-installer).
+Install [aqua](https://aquaproj.github.io/) quickly.
 
-## Versions
+## Document
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.0) | — |
-| v4.0.1 | [`v4.0.1`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.1) | — |
-| v4.0.2 | [`v4.0.2`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.2) | — |
-| v4.0.3 | [`v4.0.3`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.3) | — |
-| v4.0.4 | [`v4.0.4`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.4) | — |
+Please see [document](https://aquaproj.github.io/docs/products/aqua-installer).
 
 ## Privacy
 

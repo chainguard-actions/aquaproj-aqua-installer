@@ -1,0 +1,47 @@
+name: Test policy_allow input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up minimal aqua.yaml for policy allow
+        run: |
+          cat > "$GITHUB_WORKSPACE/aqua.yaml" <<'EOF'
+          ---
+          # yaml-language-server: $schema=https://raw.githubusercontent.com/aquaproj/aqua/main/json-schema/aqua-yaml.json
+          # @aquaproj-aqua
+          registries:
+            - type: standard
+              ref: v4.290.0
+          packages: []
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.60.1
+          enable_aqua_install: "false"
+          policy_allow: "true"
+
+      - name: Assert aqua is installed and on PATH
+        run: |
+          echo "PATH: $PATH"
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: aqua is available at $(command -v aqua)"
+
+      - name: Assert aqua version matches requested version
+        run: |
+          AQUA_VER=$(aqua version 2>&1 || true)
+          echo "aqua version output: '$AQUA_VER'"
+          if echo "$AQUA_VER" | grep -qE "2\.60\.1"; then
+            echo "PASS: aqua version contains 2.60.1"
+          else
+            echo "FAIL: expected aqua version 2.60.1 but got: $AQUA_VER"
+            exit 1
+          fi

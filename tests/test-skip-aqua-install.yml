@@ -1,0 +1,32 @@
+name: Test skip aqua install (enable_aqua_install=false)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.60.1
+          enable_aqua_install: "false"
+
+      - name: Assert aqua is installed
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: aqua is installed"
+
+      - name: Assert aqua i was not run (ghalint not installed)
+        run: |
+          # When enable_aqua_install=false, aqua i is not run so tools from aqua.yaml are not installed
+          # ghalint is listed in aqua.yaml but should not be installed
+          if command -v ghalint > /dev/null 2>&1; then
+            echo "FAIL: ghalint should not be installed when enable_aqua_install=false"
+            exit 1
+          fi
+          echo "PASS: aqua i was skipped, tools not installed"
