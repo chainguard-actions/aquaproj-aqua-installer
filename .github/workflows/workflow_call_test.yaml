@@ -1,0 +1,182 @@
+---
+name: test (workflow_call)
+on: workflow_call
+permissions: {}
+jobs:
+  path-filter:
+    # Get changed files to filter jobs
+    timeout-minutes: 10
+    outputs:
+      update-aqua-checksums: ${{steps.changes.outputs.update-aqua-checksums}}
+      renovate-config-validator: ${{steps.changes.outputs.renovate-config-validator}}
+      ghalint: ${{steps.changes.outputs.ghalint}}
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: changes
+        with:
+          filters: |
+            renovate-config-validator:
+              - renovate.json5
+            ghalint:
+              - .github/workflows/*.yaml
+              - aqua/ghalint.yaml
+
+  renovate-config-validator:
+    # Validate Renovate Configuration by renovate-config-validator.
+    uses: suzuki-shunsuke/renovate-config-validator-workflow/.github/workflows/validate.yaml@dcf025732ed76061838048f7f8b0099ae0e89876 # v0.2.5
+    needs: path-filter
+    if: needs.path-filter.outputs.renovate-config-validator == 'true'
+    permissions:
+      contents: read
+    with:
+      # https://github.com/renovatebot/renovate/discussions/35787#discussioncomment-13068531
+      node-version: 22.13.1
+
+  ghalint:
+    # Validate GitHub Actions Workflows by ghalint.
+    timeout-minutes: 20
+    needs: path-filter
+    if: needs.path-filter.outputs.ghalint == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          aqua_version: v2.55.1
+        env:
+          AQUA_GITHUB_TOKEN: ${{github.token}}
+      - run: ghalint run
+        env:
+          GHALINT_LOG_COLOR: always
+          AQUA_GITHUB_TOKEN: ${{github.token}}
+
+  test-script:
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - run: ./aqua-installer
+      - run: echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> "$GITHUB_PATH"
+      - run: command -v aqua
+      - run: aqua -v
+
+  test-script-set-version:
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - run: bash -s -- -v v2.50.0 < aqua-installer
+      - run: echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> "$GITHUB_PATH"
+      - run: command -v aqua
+      - run: aqua -v
+
+  test-action-linux:
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          aqua_version: v2.55.1
+          working_directory: tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: command -v aqua
+      - run: aqua -v
+      - run: ghalint -v
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  test-action-container:
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    container:
+      image: mirror.gcr.io/golang:1.25.3@sha256:7d73c4c57127279b23f3f70cbb368bf0fe08f7ab32af5daf5764173d25e78b74
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          aqua_version: v2.55.1
+          working_directory: tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: command -v aqua
+      - run: aqua -v
+      - run: ghalint -v
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  test-action-macos:
+    timeout-minutes: 20
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          aqua_version: v2.55.1
+          working_directory: tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: command -v aqua
+      - run: aqua -v
+      - run: ghalint -v
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  test-action-windows-normal:
+    timeout-minutes: 20
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          aqua_version: v2.55.1
+      - run: command -v aqua
+        shell: bash
+      - run: aqua -v
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: ghalint -v
+        shell: bash
+        working-directory: tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  test-action-windows-working_dir:
+    timeout-minutes: 20
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: ./
+        with:
+          aqua_version: v2.55.1
+          working_directory: tests
+
+      - run: command -v aqua
+        shell: bash
+      - run: aqua -v
+        shell: bash
+      - run: ghalint -v
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
