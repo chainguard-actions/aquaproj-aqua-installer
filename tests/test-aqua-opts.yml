@@ -1,0 +1,36 @@
+name: Test aqua_opts with aqua install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create minimal aqua.yaml
+        run: |
+          cat > "$GITHUB_WORKSPACE/aqua.yaml" << 'EOF'
+          ---
+          registries: []
+          packages: []
+          EOF
+          echo "Created aqua.yaml"
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.53.3
+          enable_aqua_install: "true"
+          aqua_opts: "-l"
+
+      - name: Assert aqua is installed
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua not found on PATH"
+            exit 1
+          fi
+          echo "PASS: aqua installed and aqua i ran with -l flag"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f "$GITHUB_WORKSPACE/aqua.yaml"

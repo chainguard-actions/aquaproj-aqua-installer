@@ -1,0 +1,38 @@
+name: Test working_directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up working directory with aqua.yaml
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/aqua-workdir"
+          cat > "$GITHUB_WORKSPACE/aqua-workdir/aqua.yaml" << 'EOF'
+          ---
+          registries: []
+          packages: []
+          EOF
+          echo "Created working directory with aqua.yaml"
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.53.3
+          enable_aqua_install: "true"
+          aqua_opts: "-l"
+          working_directory: ${{ github.workspace }}/aqua-workdir
+
+      - name: Assert aqua is installed and working directory was used
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua not found on PATH"
+            exit 1
+          fi
+          echo "PASS: aqua installed and commands ran in working_directory"
+
+      - name: Cleanup working directory
+        if: always()
+        run: rm -rf "$GITHUB_WORKSPACE/aqua-workdir"

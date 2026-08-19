@@ -1,0 +1,34 @@
+name: Test basic aqua install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.53.3
+          enable_aqua_install: "false"
+
+      - name: Assert aqua is installed and on PATH
+        run: |
+          echo "Checking aqua is on PATH..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua not found on PATH"
+            exit 1
+          fi
+          echo "PASS: aqua found on PATH"
+
+      - name: Assert aqua version matches requested
+        run: |
+          VERSION=$(aqua --version 2>&1 || aqua version 2>&1 || true)
+          echo "aqua version output: $VERSION"
+          if echo "$VERSION" | grep -q "2.53.3"; then
+            echo "PASS: aqua version matches v2.53.3"
+          else
+            echo "FAIL: aqua version does not match v2.53.3, got: $VERSION"
+            exit 1
+          fi

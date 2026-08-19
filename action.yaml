@@ -23,12 +23,10 @@ inputs:
       If this isn't empty, "aqua policy allow" is run.
       If this is "true", "aqua policy allow" is run without argument.
       If this isn't empty and isn't "true", "aqua policy allow <inputs.policy_allow>" is run.
-
   skip_install_aqua:
     required: false
     default: "false"
     description: If this true and aqua is already installed, installing aqua is skipped.
-
   working_directory:
     required: false
     default: ""
@@ -36,29 +34,45 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - run: |
         echo "::error ::aqua_version is required. https://github.com/aquaproj/aqua-installer"
         exit 1
       shell: bash
       if: inputs.aqua_version == ''
-
-    - run: echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> $GITHUB_PATH
+    - run: |
+        safe=$(printf '%s' "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" | tr -d '\n\r')
+        echo "$safe" >> "$GITHUB_PATH"
       shell: bash
       working-directory: ${{ inputs.working_directory }}
       if: runner.os != 'Windows'
-
     - run: |
-        echo "${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin" >> $GITHUB_PATH
+        safe=$(printf '%s' "${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin" | tr -d '\n\r')
+        echo "$safe" >> "$GITHUB_PATH"
       shell: bash
       working-directory: ${{ inputs.working_directory }}
       if: runner.os == 'Windows'
-
     - run: |
         $(if($env:AQUA_ROOT_DIR) {echo $env:AQUA_ROOT_DIR} else {echo "$HOME/AppData/Local/aquaproj-aqua/bin"}) | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
       working-directory: ${{ inputs.working_directory }}
       if: runner.os == 'Windows'
-
     - run: |
         if [ "${SKIP_INSTALL_AQUA:-}" = true ] && command -v aqua >/dev/null; then
           echo "[INFO] Installing aqua is skipped" >&2
@@ -71,12 +85,10 @@ runs:
         AQUA_VERSION: ${{ inputs.aqua_version }}
         SKIP_INSTALL_AQUA: ${{ inputs.skip_install_aqua }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
-
     - run: aqua policy allow
       working-directory: ${{ inputs.working_directory }}
       if: inputs.policy_allow == 'true'
       shell: bash
-
     - run: aqua policy allow "$POLICY_FILE"
       working-directory: ${{ inputs.working_directory }}
       if: |
@@ -84,8 +96,13 @@ runs:
       shell: bash
       env:
         POLICY_FILE: ${{ inputs.policy_allow }}
-
-    - run: aqua i $AQUA_OPTS
+    - run: |
+        opts=()
+        if [ -n "$AQUA_OPTS" ]; then
+          while IFS= read -r -d '' t; do opts+=("$t"); done \
+            < <(printf '%s' "$AQUA_OPTS" | xargs printf '%s\0')
+        fi
+        aqua i "${opts[@]}"
       if: inputs.enable_aqua_install == 'true'
       working-directory: ${{ inputs.working_directory }}
       shell: bash

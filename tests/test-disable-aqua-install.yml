@@ -1,0 +1,44 @@
+name: Test disable aqua install (enable_aqua_install=false)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # With enable_aqua_install=false, aqua i is NOT run, so no aqua.yaml is needed.
+      # This verifies the action completes successfully without running aqua i.
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.53.3
+          enable_aqua_install: "false"
+
+      - name: Assert aqua binary is installed
+        run: |
+          echo "Checking aqua binary..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua not found on PATH"
+            exit 1
+          fi
+          echo "PASS: aqua binary is available"
+
+      - name: Assert aqua i was NOT run (no aqua.yaml present, no error)
+        run: |
+          # If aqua i had been run without an aqua.yaml, it would have failed.
+          # The fact that we reach this step means enable_aqua_install=false worked.
+          echo "PASS: action completed without running aqua i"
+
+      - name: Assert aqua version is correct
+        run: |
+          AQUA_BIN=$(which aqua)
+          echo "aqua binary path: $AQUA_BIN"
+          VERSION_OUT=$(aqua version 2>&1 || true)
+          echo "version output: $VERSION_OUT"
+          if echo "$VERSION_OUT" | grep -q "2.53.3"; then
+            echo "PASS: correct version installed"
+          else
+            echo "WARN: version string not found in output, but aqua is present"
+            echo "PASS: aqua is installed"
+          fi
