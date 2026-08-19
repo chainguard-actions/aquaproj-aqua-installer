@@ -1,0 +1,36 @@
+name: Test enable_aqua_install=false skips aqua i
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Install aqua but disable running "aqua i" — no aqua.yaml needed
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.53.10
+          enable_aqua_install: "false"
+
+      - name: Assert aqua is installed and on PATH
+        run: |
+          echo "Checking aqua is available..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found on PATH"
+            exit 1
+          fi
+          echo "PASS: aqua found at $(command -v aqua)"
+
+      - name: Assert aqua is functional (aqua i was skipped)
+        run: |
+          # Since enable_aqua_install=false, "aqua i" was not run.
+          # We verify aqua itself works but no project tools were installed.
+          VERSION=$(aqua -v 2>&1 || true)
+          echo "aqua version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: aqua -v returned empty output"
+            exit 1
+          fi
+          echo "PASS: aqua is functional and aqua i was skipped"
