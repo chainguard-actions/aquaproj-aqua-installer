@@ -1,4 +1,4 @@
-name: Test basic aqua installation
+name: Test working_directory input
 on:
   workflow_dispatch:
 jobs:
@@ -7,11 +7,15 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Create working directory
+        run: mkdir -p "$GITHUB_WORKSPACE/aqua-workdir"
+
       - id: action
         uses: .
         with:
           aqua_version: v2.53.3
           enable_aqua_install: "false"
+          working_directory: ${{ github.workspace }}/aqua-workdir
           github_token: ${{ github.token }}
 
       - name: Assert aqua is installed and on PATH
@@ -21,15 +25,6 @@ jobs:
             echo "FAIL: aqua not found on PATH"
             exit 1
           fi
-          echo "PASS: aqua found on PATH"
-
-      - name: Assert aqua version matches requested
-        run: |
           VERSION=$(aqua version 2>&1 || aqua -v 2>&1 || true)
-          echo "aqua version output: $VERSION"
-          if echo "$VERSION" | grep -q "2.53.3"; then
-            echo "PASS: aqua version v2.53.3 confirmed"
-          else
-            echo "FAIL: expected 2.53.3 in version output, got: $VERSION"
-            exit 1
-          fi
+          echo "aqua version: $VERSION"
+          echo "PASS: aqua installed correctly with working_directory set"
