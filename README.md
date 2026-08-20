@@ -8,7 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
-| v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.0) | — |
+| v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.0) | [`9ebf656`](https://github.com/aquaproj/aqua-installer/commit/9ebf656952a20c45a5d66606f083ff34f58b8ce0) |
 | v4.0.1 | [`v4.0.1`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.1) | [`5c140f8`](https://github.com/aquaproj/aqua-installer/commit/5c140f8fcd4035d84e5d893f1e4a9dc1283e1e4a) |
 | v4.0.2 | [`v4.0.2`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.2) | [`d1fe507`](https://github.com/aquaproj/aqua-installer/commit/d1fe50798dbadd4eb5b98957290ca175f6b4870f) |
 | v4.0.3 | [`v4.0.3`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.3) | [`ea518c1`](https://github.com/aquaproj/aqua-installer/commit/ea518c135a02fc11ff8024364510c181a5c6b342) |
