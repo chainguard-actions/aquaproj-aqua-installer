@@ -12,15 +12,34 @@ jobs:
         with:
           aqua_version: v2.51.2
           enable_aqua_install: "false"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          github_token: ${{ github.token }}
 
-      - name: Assert aqua is on PATH
+      - name: Assert aqua is installed and on PATH
         run: |
+          echo "PATH: $PATH"
           echo "Checking aqua is available..."
+          AQUA_BIN="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin/aqua"
+          echo "Expected aqua binary: $AQUA_BIN"
+          if [ -f "$AQUA_BIN" ]; then
+            echo "aqua binary exists at $AQUA_BIN"
+          else
+            echo "WARN: aqua binary not found at $AQUA_BIN"
+          fi
           if ! command -v aqua > /dev/null 2>&1; then
-            echo "FAIL: aqua command not found on PATH"
+            echo "FAIL: aqua command not found in PATH"
             exit 1
           fi
-          echo "aqua version: $(aqua -v 2>&1 || true)"
-          echo "PASS: aqua is available on PATH"
+          VERSION=$(aqua -v 2>&1 || aqua version 2>&1 || true)
+          echo "aqua version output: $VERSION"
+          echo "PASS: aqua is installed and available"
+
+      - name: Assert aqua version matches requested
+        run: |
+          VERSION=$(aqua -v 2>&1 || aqua version 2>&1 || true)
+          echo "actual version output: $VERSION"
+          if echo "$VERSION" | grep -q "2.51.2"; then
+            echo "PASS: version contains 2.51.2"
+          else
+            echo "FAIL: expected version containing 2.51.2 but got: $VERSION"
+            exit 1
+          fi

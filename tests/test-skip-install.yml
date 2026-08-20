@@ -1,0 +1,45 @@
+name: Test skip_install_aqua when aqua already installed
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # First install aqua normally
+      - name: Install aqua initially
+        id: first-install
+        uses: .
+        with:
+          aqua_version: v2.51.2
+          enable_aqua_install: "false"
+          github_token: ${{ github.token }}
+
+      - name: Verify aqua is installed after first install
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua not found after first install"
+            exit 1
+          fi
+          echo "aqua is installed: $(aqua -v 2>&1 || true)"
+
+      # Now run again with skip_install_aqua=true - should skip downloading
+      - name: Run action again with skip_install_aqua=true
+        id: skip-install
+        uses: .
+        with:
+          aqua_version: v2.51.2
+          skip_install_aqua: "true"
+          enable_aqua_install: "false"
+          github_token: ${{ github.token }}
+
+      - name: Assert aqua is still available after skip
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found after skip_install_aqua run"
+            exit 1
+          fi
+          VERSION=$(aqua -v 2>&1 || true)
+          echo "aqua version: $VERSION"
+          echo "PASS: aqua still available after skip_install_aqua=true"

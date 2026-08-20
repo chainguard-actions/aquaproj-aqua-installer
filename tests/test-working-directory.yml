@@ -1,0 +1,29 @@
+name: Test working_directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create working directory
+        run: mkdir -p /tmp/aqua-test-workdir
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.51.2
+          enable_aqua_install: "false"
+          working_directory: /tmp/aqua-test-workdir
+          github_token: ${{ github.token }}
+
+      - name: Assert aqua is installed and available
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found in PATH"
+            exit 1
+          fi
+          VERSION=$(aqua -v 2>&1 || true)
+          echo "aqua version: $VERSION"
+          echo "PASS: aqua installed successfully with working_directory set"
