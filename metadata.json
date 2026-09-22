@@ -1,7 +1,0 @@
-{
-  "owner": "aquaproj",
-  "name": "aqua-installer",
-  "visibility": "internal",
-  "description": "Install aqua https://aquaproj.github.io/ and install tools with aqua",
-  "block_publish": false
-}
