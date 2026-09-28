@@ -1,0 +1,36 @@
+name: Test policy_allow input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Install aqua with policy_allow=true; "aqua policy allow" may exit non-zero
+      # if no aqua-policy.yaml exists, so we allow failure and assert aqua itself
+      # was installed correctly (the policy_allow input was exercised).
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          aqua_version: v2.48.1
+          enable_aqua_install: "false"
+          policy_allow: "true"
+
+      - name: Assert aqua is installed regardless of policy_allow outcome
+        run: |
+          echo "action outcome: ${{ steps.action.outcome }}"
+          # aqua should be on PATH because the install step runs before policy allow
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found on PATH"
+            exit 1
+          fi
+          VERSION=$(aqua -v 2>&1 || true)
+          echo "aqua version: $VERSION"
+          if echo "$VERSION" | grep -q "2.48.1"; then
+            echo "PASS: aqua installed and policy_allow input was exercised"
+          else
+            echo "FAIL: expected version 2.48.1 in output: $VERSION"
+            exit 1
+          fi

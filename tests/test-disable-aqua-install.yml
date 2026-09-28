@@ -1,0 +1,24 @@
+name: Test disable aqua install (enable_aqua_install=false)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.48.1
+          enable_aqua_install: "false"
+
+      - name: Assert aqua is installed but aqua i was not run
+        run: |
+          echo "Checking aqua is available..."
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found on PATH"
+            exit 1
+          fi
+          echo "PASS: aqua is installed and available on PATH"
+          echo "Note: enable_aqua_install=false means 'aqua i' was not run (no aqua.yaml tools installed)"

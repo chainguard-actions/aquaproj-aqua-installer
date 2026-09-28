@@ -1,19 +1,17 @@
-# aquaproj/aqua-installer
+# aqua-installer
 
-Install aqua https://aquaproj.github.io/ and install tools with aqua
+[![GitHub last commit](https://img.shields.io/github/last-commit/aquaproj/aqua-installer.svg)](https://github.com/aquaproj/aqua-installer)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/aquaproj/aqua-installer/main/LICENSE)
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/aquaproj/aqua-installer](https://github.com/aquaproj/aqua-installer).
+Install [aqua](https://aquaproj.github.io/) quickly.
 
-## Versions
+## Document
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.0) | [`9ebf656`](https://github.com/aquaproj/aqua-installer/commit/9ebf656952a20c45a5d66606f083ff34f58b8ce0) |
-| v4.0.1 | [`v4.0.1`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.1) | [`5c140f8`](https://github.com/aquaproj/aqua-installer/commit/5c140f8fcd4035d84e5d893f1e4a9dc1283e1e4a) |
-| v4.0.2 | [`v4.0.2`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.2) | [`d1fe507`](https://github.com/aquaproj/aqua-installer/commit/d1fe50798dbadd4eb5b98957290ca175f6b4870f) |
-| v4.0.3 | [`v4.0.3`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.3) | [`ea518c1`](https://github.com/aquaproj/aqua-installer/commit/ea518c135a02fc11ff8024364510c181a5c6b342) |
-| v4.0.4 | [`v4.0.4`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.4) | [`11dd79b`](https://github.com/aquaproj/aqua-installer/commit/11dd79b4e498d471a9385aa9fb7f62bb5f52a73c) |
-| v4.0.5 | [`v4.0.5`](https://github.com/chainguard-actions/aquaproj-aqua-installer/tree/v4.0.5) | [`96a9bc2`](https://github.com/aquaproj/aqua-installer/commit/96a9bc20066c5bf5e275b41019cfc165b25f4e2e) |
+Please see [document](https://aquaproj.github.io/docs/products/aqua-installer).
+
+## License
+
+[MIT](LICENSE)
 
 ## Privacy
 

@@ -1,0 +1,28 @@
+name: Test aqua_opts passed to aqua i
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Install aqua with enable_aqua_install=true and custom aqua_opts
+      # Using -l (lazy install) which is the default, so it won't actually download tools
+      # but will verify the aqua i command runs without error
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.48.1
+          enable_aqua_install: "true"
+          aqua_opts: "-l"
+
+      - name: Assert aqua is installed and available
+        run: |
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found on PATH"
+            exit 1
+          fi
+          VERSION=$(aqua -v 2>&1 || true)
+          echo "aqua version: $VERSION"
+          echo "PASS: aqua installed and 'aqua i -l' ran successfully"
