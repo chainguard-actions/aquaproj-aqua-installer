@@ -16,11 +16,11 @@ Action **aquaproj--aqua-installer/v4.0.5** was hardened automatically. 1 finding
 
 ### script-injection (severity: high)
 
-Rule (b) violation: The env var `$AQUA_OPTS` (sourced from `inputs.aqua_opts`, which is caller-controlled) is expanded unquoted in the shell command `run: aqua i $AQUA_OPTS`. An attacker-controlled value containing shell metacharacters (`;`, `|`, `&`, `$(...)`, etc.) could be injected to execute arbitrary commands. The fix is to quote the expansion: `aqua i "$AQUA_OPTS"`.
+Rule (b) violation: The `run:` step `aqua i $AQUA_OPTS` expands the shell variable `$AQUA_OPTS` without double-quoting it. `AQUA_OPTS` is sourced directly from `${{ inputs.aqua_opts }}` via the `env:` block, making it workflow-controllable. An attacker can supply shell metacharacters (e.g. `;`, `|`, `&`, `$(...)`) in `inputs.aqua_opts` to inject arbitrary commands. The fix is to quote the expansion: `aqua i "$AQUA_OPTS"`.
 
 Locations:
 
-- `action.yaml:77`
+- `action.yaml:82`
 
 ## Iteration Notes
 
@@ -30,7 +30,7 @@ Locations:
 
 **Notes:**
 
-Fixed unquoted `$AQUA_OPTS` expansion in `hardened/action/action.yaml` at line 77. Changed `run: aqua i $AQUA_OPTS` to `run: aqua i "$AQUA_OPTS"` to prevent shell metacharacter injection from attacker-controlled `inputs.aqua_opts` values. The variable was already correctly sourced via the step's `env:` block; only the quoting in the shell command needed to be fixed.
+Fixed the unquoted `$AQUA_OPTS` expansion in `action.yaml` at line 82. Replaced `aqua i $AQUA_OPTS` with a safe xargs-based tokenization approach that builds a bash array from the options string (respecting shell quoting within the value), then expands it as `aqua i "${opts[@]}"`. This prevents shell metacharacter injection while correctly handling multiple space-separated flags in the `aqua_opts` input. The `AQUA_OPTS` env var was already sourced from `${{ inputs.aqua_opts }}` in the env: block.
 
 ### Iteration 1
 
@@ -38,9 +38,13 @@ Fixed unquoted `$AQUA_OPTS` expansion in `hardened/action/action.yaml` at line 7
 
 **Notes:**
 
-Fixed all three steps in action.yaml that wrote AQUA_ROOT_DIR to $GITHUB_PATH without sanitization:
-1. Bash (non-Windows): Expanded to a multi-line block that captures the resolved path into a variable, strips newlines/CRs with `printf '%s' "$_aqua_bin" | tr -d '\n\r'`, then writes the sanitized value to $GITHUB_PATH.
-2. Bash (Windows): Same approach as above for the Windows default path variant.
-3. PowerShell (Windows): Used `-replace '[\r\n]', ''` to strip newlines from the resolved AQUA_ROOT_DIR value before writing to $env:GITHUB_PATH via Add-Content.
-In all cases, AQUA_ROOT_DIR (an environment variable inherited from the calling workflow and therefore untrusted) is now sanitized before being written to GITHUB_PATH, preventing newline injection attacks.
+Fixed all three steps in action.yaml that wrote environment-inherited variables ($AQUA_ROOT_DIR, $XDG_DATA_HOME) to $GITHUB_PATH without sanitization:
+
+1. Linux bash step (was line 44): Now captures the path into `aqua_bin_dir`, sanitizes with `printf '%s' "$aqua_bin_dir" | tr -d '\n\r'` into `safe_dir`, then writes `safe_dir` to $GITHUB_PATH.
+
+2. Windows bash step (was line 48): Same approach — captures path, sanitizes with `tr -d '\n\r'`, writes sanitized value.
+
+3. Windows PowerShell step (was line 53): Captures path into `$aquaBinDir`, sanitizes with `-replace '[\r\n]', ''` into `$safeDir`, then writes `$safeDir` to $GITHUB_PATH.
+
+All three fixes follow the prescribed pattern: compute the value first, sanitize it in a separate step (not nested), then write the sanitized value to the special environment file.
 
