@@ -1,0 +1,31 @@
+name: Test basic aqua install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.65.2
+          enable_aqua_install: "false"
+      - name: Assert aqua installed and on PATH
+        run: |
+          if ! command -v aqua >/dev/null; then
+            echo "FAIL: aqua not found on PATH"
+            exit 1
+          fi
+          VERSION="$(aqua -v)"
+          echo "actual: $VERSION"
+          if ! echo "$VERSION" | grep -q "2.65.2"; then
+            echo "FAIL: expected aqua version 2.65.2"
+            exit 1
+          fi
+          EXPECTED="${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua/bin/aqua"
+          if [ ! -x "$EXPECTED" ]; then
+            echo "FAIL: $EXPECTED not found"
+            exit 1
+          fi
+          echo "PASS"

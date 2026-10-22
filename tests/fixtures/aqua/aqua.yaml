@@ -1,0 +1,8 @@
+---
+checksum:
+  enabled: false
+registries:
+  - type: standard
+    ref: v4.572.0
+packages:
+  - name: suzuki-shunsuke/ghalint@v1.5.6

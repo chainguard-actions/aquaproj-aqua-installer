@@ -1,0 +1,24 @@
+name: Test aqua i -l with working_directory
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.65.2
+          working_directory: tests/fixtures/aqua
+      - name: Assert aqua installed and proxy link created
+        working-directory: tests/fixtures/aqua
+        run: |
+          command -v aqua || { echo "FAIL: aqua not on PATH"; exit 1; }
+          ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua"
+          ls -la "$ROOT/bin" || true
+          if [ ! -e "$ROOT/bin/ghalint" ]; then
+            echo "FAIL: ghalint link not created by aqua i -l"
+            exit 1
+          fi
+          echo "PASS"

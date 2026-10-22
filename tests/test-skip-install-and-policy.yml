@@ -1,0 +1,33 @@
+name: Test skip_install_aqua and policy_allow
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: first
+        uses: .
+        with:
+          aqua_version: v2.65.2
+          enable_aqua_install: "false"
+      - id: second
+        uses: .
+        with:
+          aqua_version: v2.65.2
+          skip_install_aqua: "true"
+          enable_aqua_install: "false"
+          working_directory: tests/fixtures/aqua
+          policy_allow: aqua-policy.yaml
+      - name: Assert both steps succeeded and aqua is usable
+        env:
+          O1: ${{ steps.first.outcome }}
+          O2: ${{ steps.second.outcome }}
+        run: |
+          echo "first: $O1 second: $O2"
+          if [ "$O1" != "success" ] || [ "$O2" != "success" ]; then
+            echo "FAIL: expected both steps to succeed"
+            exit 1
+          fi
+          aqua -v | grep -q "2.65.2" || { echo "FAIL: unexpected aqua version"; exit 1; }
+          echo "PASS"

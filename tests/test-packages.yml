@@ -1,0 +1,27 @@
+name: Test installing specific packages
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          aqua_version: v2.65.2
+          working_directory: tests/fixtures/aqua
+          packages: |
+            # comment line is ignored
+            ghalint # trailing comment
+      - name: Assert ghalint installed
+        working-directory: tests/fixtures/aqua
+        run: |
+          P="$(aqua which ghalint)"
+          echo "actual: $P"
+          if [ -z "$P" ] || [ ! -x "$P" ]; then
+            echo "FAIL: ghalint binary not installed"
+            exit 1
+          fi
+          "$P" version || "$P" --version || true
+          echo "PASS"
