@@ -10,41 +10,57 @@
 
 **Harden Agent Version:** `2`
 
-Action **aquaproj--aqua-installer/v4.0.5** was hardened automatically. 1 finding(s) were identified and resolved across 2 iteration(s).
+Action **aquaproj--aqua-installer/v4.0.5** was hardened automatically. 4 finding(s) were identified and resolved across 2 iteration(s).
 
 ## Findings Fixed
 
-### script-injection (severity: high)
+### github-env-injection (severity: high)
 
-Rule (b) violation: The `run:` step `aqua i $AQUA_OPTS` expands the shell variable `$AQUA_OPTS` without double-quoting it. `AQUA_OPTS` is sourced directly from `${{ inputs.aqua_opts }}` via the `env:` block, making it workflow-controllable. An attacker can supply shell metacharacters (e.g. `;`, `|`, `&`, `$(...)`) in `inputs.aqua_opts` to inject arbitrary commands. The fix is to quote the expansion: `aqua i "$AQUA_OPTS"`.
+Composite step writes a path built from the inherited env vars AQUA_ROOT_DIR and XDG_DATA_HOME, which the calling workflow controls, to $GITHUB_PATH without sanitizing it first (no printf '%s' | tr -d '\n\r'): `echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> $GITHUB_PATH`
 
 Locations:
 
-- `action.yaml:82`
+- `action.yaml:45`
+
+### github-env-injection (severity: high)
+
+Windows bash step writes a path built from the inherited env var AQUA_ROOT_DIR to $GITHUB_PATH without stripping newlines: `echo "${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin" >> $GITHUB_PATH`
+
+Locations:
+
+- `action.yaml:51`
+
+### github-env-injection (severity: high)
+
+Windows pwsh step writes the inherited $env:AQUA_ROOT_DIR straight to $env:GITHUB_PATH with Out-File and does not strip newlines first, so a value containing newlines can inject extra PATH entries.
+
+Locations:
+
+- `action.yaml:57`
+
+### script-injection (severity: high)
+
+Sub-rule (b): the env var AQUA_OPTS comes from inputs.aqua_opts but is expanded without quotes: `run: aqua i $AQUA_OPTS`. The shell word-splits and glob-expands the input value.
+
+Locations:
+
+- `action.yaml:89`
 
 ## Iteration Notes
 
 ### Iteration 1
 
+**Fixes applied:** github-env-injection, script-injection
+
+**Notes:**
+
+Bash GITHUB_PATH writes (non-Windows and Windows): the path is built into a variable, newlines are removed with printf '%s' | tr -d '\n\r', and the result is written to the quoted "$GITHUB_PATH". Pwsh step: CR/LF are removed with -replace before Out-File. Upstream's behaviour is kept as it was, including that it does not add /bin when AQUA_ROOT_DIR is set. aqua i: the unquoted $AQUA_OPTS is now split into a bash array with read -r -d '' -a, wrapped in an empty-value check and followed by || true, then passed as "${args[@]}". It splits on the same whitespace as before but no longer expands globs.
+
+### Iteration 2
+
 **Fixes applied:** script-injection
 
 **Notes:**
 
-Fixed the unquoted `$AQUA_OPTS` expansion in `action.yaml` at line 82. Replaced `aqua i $AQUA_OPTS` with a safe xargs-based tokenization approach that builds a bash array from the options string (respecting shell quoting within the value), then expands it as `aqua i "${opts[@]}"`. This prevents shell metacharacter injection while correctly handling multiple space-separated flags in the `aqua_opts` input. The `AQUA_OPTS` env var was already sourced from `${{ inputs.aqua_opts }}` in the env: block.
-
-### Iteration 1
-
-**Fixes applied:** github-env-injection
-
-**Notes:**
-
-Fixed all three steps in action.yaml that wrote environment-inherited variables ($AQUA_ROOT_DIR, $XDG_DATA_HOME) to $GITHUB_PATH without sanitization:
-
-1. Linux bash step (was line 44): Now captures the path into `aqua_bin_dir`, sanitizes with `printf '%s' "$aqua_bin_dir" | tr -d '\n\r'` into `safe_dir`, then writes `safe_dir` to $GITHUB_PATH.
-
-2. Windows bash step (was line 48): Same approach — captures path, sanitizes with `tr -d '\n\r'`, writes sanitized value.
-
-3. Windows PowerShell step (was line 53): Captures path into `$aquaBinDir`, sanitizes with `-replace '[\r\n]', ''` into `$safeDir`, then writes `$safeDir` to $GITHUB_PATH.
-
-All three fixes follow the prescribed pattern: compute the value first, sanitize it in a separate step (not nested), then write the sanitized value to the special environment file.
+In action.yaml, the `aqua i $AQUA_OPTS` step now reads AQUA_OPTS into an array with `read -r -d '' -a` (guarded by an emptiness check, with `|| true`) and runs `aqua i "${opts[@]}"`. Like upstream's unquoted $AQUA_OPTS, it still splits on whitespace, so multi-option values such as '-l -a' keep working. Unlike upstream, it no longer expands globs.
 
