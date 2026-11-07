@@ -1,4 +1,4 @@
-name: Test policy_allow input
+name: Test policy_allow input with a policy file
 on:
   workflow_dispatch:
 jobs:
@@ -7,45 +7,41 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # Install aqua first so the policy allow command can be found
-      - name: Install aqua
-        uses: .
-        with:
-          aqua_version: v2.51.2
-          enable_aqua_install: "false"
-          github_token: ${{ github.token }}
-
-      - name: Verify aqua is installed
+      - name: Create policy file
         run: |
-          if ! command -v aqua > /dev/null 2>&1; then
-            echo "FAIL: aqua not found after install"
-            exit 1
-          fi
-          echo "aqua is installed: $(aqua -v 2>&1 || true)"
+          mkdir -p /tmp/aqua-policy-test
+          cat > /tmp/aqua-policy-test/aqua-policy.yaml <<'EOF'
+          registries:
+            - type: standard
+              ref: semver(">= 3.0.0")
+          packages:
+            - registry: standard
+          EOF
+          cat /tmp/aqua-policy-test/aqua-policy.yaml
 
-      # Test policy_allow=true: runs "aqua policy allow"
-      # The command may exit non-zero if no policy file exists, so we allow failure
-      # and assert that the step was at least attempted (not skipped).
-      - id: policy-allow-true
-        name: Run action with policy_allow=true
+      - id: action
         uses: .
         with:
           aqua_version: v2.51.2
-          skip_install_aqua: "true"
           enable_aqua_install: "false"
-          policy_allow: "true"
+          policy_allow: /tmp/aqua-policy-test/aqua-policy.yaml
           github_token: ${{ github.token }}
-        continue-on-error: true
 
-      - name: Assert policy_allow=true step ran (not skipped)
+      - name: Assert aqua installed and policy allowed
         env:
-          OUTCOME: ${{ steps.policy-allow-true.outcome }}
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: policy_allow=true step was skipped unexpectedly"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: action did not succeed"
             exit 1
           fi
-          # success or failure are both acceptable — the step ran and attempted
-          # "aqua policy allow"; failure is expected when no policy file exists
-          echo "PASS: policy_allow=true step ran with outcome=$OUTCOME"
+          if ! command -v aqua > /dev/null 2>&1; then
+            echo "FAIL: aqua command not found in PATH"
+            exit 1
+          fi
+          aqua -v
+          ROOT="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}"
+          echo "aqua root contents:"
+          find "$ROOT" -maxdepth 3 -path "$ROOT/pkgs" -prune -o -print 2>/dev/null | head -50 || true
+          echo "PASS: policy_allow step ran successfully"

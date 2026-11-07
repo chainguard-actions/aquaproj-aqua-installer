@@ -10,39 +10,60 @@
 
 **Harden Agent Version:** `2`
 
-Action **aquaproj--aqua-installer/v4.0.0** was hardened automatically. 2 finding(s) were identified and resolved across 1 iteration(s).
+Action **aquaproj--aqua-installer/v4.0.0** was hardened automatically. 4 finding(s) were identified and resolved across 2 iteration(s).
 
 ## Findings Fixed
 
-### script-injection (severity: high)
+### github-env-injection (severity: high)
 
-Rule (b) violation: The shell variable $AQUA_OPTS is expanded unquoted in the run command `aqua i $AQUA_OPTS`. This variable is sourced from `inputs.aqua_opts` (set via `env: AQUA_OPTS: ${{ inputs.aqua_opts }}`). An attacker-controlled value containing shell metacharacters (`;`, `|`, `&`, `$(...)`, etc.) would be parsed by the shell, enabling command injection. The fix is to quote the expansion: `aqua i "$AQUA_OPTS"`.
+Composite step writes the inherited, workflow-controlled env vars AQUA_ROOT_DIR / XDG_DATA_HOME to $GITHUB_PATH with no printf '%s' ... | tr -d '\n\r' cleanup first: `echo "${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin" >> $GITHUB_PATH`.
 
 Locations:
 
-- `action.yaml:84`
+- `action.yaml:45`
 
 ### github-env-injection (severity: high)
 
-Three `run:` steps write the inherited process env var `AQUA_ROOT_DIR` to `$GITHUB_PATH` without sanitization. `AQUA_ROOT_DIR` is not set by the action itself — it is inherited from the calling workflow's environment, making it a workflow-controlled (untrusted) value. A calling workflow could set `AQUA_ROOT_DIR` to a value containing newline characters, injecting additional arbitrary entries into `$GITHUB_PATH`. The fix is to sanitize the value before writing: `safe=$(printf '%s' "$AQUA_ROOT_DIR" | tr -d '\n\r')` and use `$safe` in the echo. Affected steps: (1) bash step for non-Windows writing `${AQUA_ROOT_DIR:-...}/bin >> $GITHUB_PATH`; (2) bash step for Windows writing `${AQUA_ROOT_DIR:-...}/bin >> $GITHUB_PATH`; (3) PowerShell step writing `$env:AQUA_ROOT_DIR` via `Out-File` to `$env:GITHUB_PATH`.
+Windows bash step writes the inherited env var AQUA_ROOT_DIR to $GITHUB_PATH with no newline cleanup first: `echo "${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin" >> $GITHUB_PATH`.
 
 Locations:
 
-- `action.yaml:43`
-- `action.yaml:48`
-- `action.yaml:54`
+- `action.yaml:51`
+
+### github-env-injection (severity: high)
+
+pwsh step writes the inherited $env:AQUA_ROOT_DIR to $env:GITHUB_PATH through Out-File with no CR/LF cleanup first. An embedded newline could inject extra PATH entries.
+
+Locations:
+
+- `action.yaml:57`
+
+### script-injection (severity: high)
+
+Sub-rule (b): an env var built from inputs.aqua_opts is expanded unquoted: `run: aqua i $AQUA_OPTS`. Word splitting and glob expansion apply to the value supplied by the workflow. Quote it, for example `aqua i ${AQUA_OPTS:+"$AQUA_OPTS"}`, or parse it into an array safely.
+
+Locations:
+
+- `action.yaml:88`
 
 ## Iteration Notes
 
 ### Iteration 1
 
-**Fixes applied:** script-injection, github-env-injection
+**Fixes applied:** github-env-injection, script-injection
 
 **Notes:**
 
-Fixed all four locations in action.yaml:
-1. Non-Windows bash step (line 43): sanitize AQUA_ROOT_DIR with `printf '%s' ... | tr -d '\n\r'` before writing to $GITHUB_PATH.
-2. Windows bash step (line 48): same sanitization for AQUA_ROOT_DIR.
-3. PowerShell step (line 54): use `-replace '[\r\n]', ''` to strip newlines from AQUA_ROOT_DIR before writing to $GITHUB_PATH.
-4. aqua install step (line 84): replaced unquoted `$AQUA_OPTS` expansion with xargs-based tokenization into a bash array, then `aqua i "${opts[@]}"` to prevent shell metacharacter injection while preserving multi-flag support.
+All four findings are fixed in action.yaml. Nothing was run to test the changes.
+
+- **Writes to $GITHUB_PATH (3 findings):** The two bash steps now save the aqua bin path to a variable, strip newlines and carriage returns with `printf '%s' ... | tr -d '\n\r'`, and then write it to "$GITHUB_PATH". The pwsh step strips them with `-replace "[`r`n]", ""` before `Out-File`.
+- **`aqua_opts` (1 finding):** I didn't use the suggested `${AQUA_OPTS:+"$AQUA_OPTS"}`. `aqua_opts` is a list of options, and that form would pass the whole list to aqua as one argument. Instead the value is split on whitespace into an array with `read -r -d '' -a args <<< "$AQUA_OPTS" || true`, inside an `if [ -n ... ]` check, and the step runs `aqua i "${args[@]}"`. That matches how the original unquoted `$AQUA_OPTS` was split, except that wildcard characters are no longer expanded into file names. Quotes in the value are still treated as plain text, as before.
+
+### Iteration 2
+
+**Fixes applied:** script-injection
+
+**Notes:**
+
+In action.yaml, the 'aqua i $AQUA_OPTS' step now splits AQUA_OPTS into an array with `read -r -d '' -a opts <<< "$AQUA_OPTS" || true` (guarded by -n) and runs `aqua i "${opts[@]}"`. It still splits on whitespace and newlines like upstream's unquoted $VAR, so the default '-l' and multi-flag values work as before, but glob characters are no longer expanded.
 
