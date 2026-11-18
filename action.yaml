@@ -77,7 +77,7 @@ runs:
 
     - run: |
         $aquaBinPath = $(if($env:AQUA_ROOT_DIR) {echo $env:AQUA_ROOT_DIR} else {echo "$HOME/AppData/Local/aquaproj-aqua/bin"})
-        $aquaBinPath = ($aquaBinPath | Out-String) -replace "[`r`n]", ""
+        $aquaBinPath = "$aquaBinPath" -replace "[`r`n]", ""
         $aquaBinPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
       working-directory: ${{ inputs.working_directory }}
@@ -110,10 +110,8 @@ runs:
         POLICY_FILE: ${{ inputs.policy_allow }}
 
     - run: |
-        opts=()
-        if [ -n "$AQUA_OPTS" ]; then
-          read -r -d '' -a opts <<< "$AQUA_OPTS" || true
-        fi
+        # shellcheck disable=SC2086
+        opts=($AQUA_OPTS)   # same split and glob as upstream's unquoted $AQUA_OPTS
         aqua i "${opts[@]}"
       if: inputs.enable_aqua_install == 'true'
       working-directory: ${{ inputs.working_directory }}
