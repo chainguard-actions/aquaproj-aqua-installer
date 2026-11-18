@@ -70,14 +70,16 @@ runs:
 
     - run: |
         aqua_bin="${AQUA_ROOT_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/aquaproj-aqua}/bin"
-        printf '%s\n' "$(printf '%s' "$aqua_bin" | tr -d '\n\r')" >> "$GITHUB_PATH"
+        safe_bin=$(printf '%s' "$aqua_bin" | tr -d '\n\r')
+        printf '%s\n' "$safe_bin" >> "$GITHUB_PATH"
       shell: bash
       working-directory: ${{ inputs.working_directory }}
       if: runner.os != 'Windows'
 
     - run: |
         aqua_bin="${AQUA_ROOT_DIR:-$HOME/AppData/Local/aquaproj-aqua}/bin"
-        printf '%s\n' "$(printf '%s' "$aqua_bin" | tr -d '\n\r')" >> "$GITHUB_PATH"
+        safe_bin=$(printf '%s' "$aqua_bin" | tr -d '\n\r')
+        printf '%s\n' "$safe_bin" >> "$GITHUB_PATH"
       shell: bash
       working-directory: ${{ inputs.working_directory }}
       if: runner.os == 'Windows'
@@ -121,21 +123,14 @@ runs:
         pkgs=()
         while IFS= read -r line; do
           line=${line%%#*}
-          words=()
-          if [ -n "$line" ]; then
-            read -r -d '' -a words <<< "$line" || true
-          fi
-          if [ "${#words[@]}" -gt 0 ]; then
-            pkgs+=("${words[@]}")
-          fi
+          # shellcheck disable=SC2206
+          pkgs+=($line)   # same whitespace split as upstream (globbing disabled by set -f)
         done <<< "$PKGS"
         if [ "${#pkgs[@]}" -gt 0 ] && [ "$OPTS" = "-l" ]; then
           OPTS=""
         fi
-        opts=()
-        if [ -n "$OPTS" ]; then
-          read -r -d '' -a opts <<< "$OPTS" || true
-        fi
+        # shellcheck disable=SC2086,SC2206
+        opts=($OPTS)   # same whitespace split as upstream's unquoted $OPTS (globbing disabled by set -f)
         aqua i ${opts[@]+"${opts[@]}"} -- ${pkgs[@]+"${pkgs[@]}"}
       if: inputs.enable_aqua_install == 'true'
       working-directory: ${{ inputs.working_directory }}
